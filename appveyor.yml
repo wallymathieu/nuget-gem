@@ -4,4 +4,4 @@ install:
   - gem install bundler
   - bundle install
 build_script:
-  - rspec
+  - rake
