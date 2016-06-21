@@ -3,9 +3,12 @@ require 'net/https'
 require 'json'
 
 module NuGet
-    $serverName = "dist.nuget.org"
+    @@serverName = "dist.nuget.org"
+    @@nuget_exe = File.join( File.dirname(__FILE__) , "..", "bin", "/nuget.exe")
+    @@version = File.read(File.join(File.dirname(__FILE__) , "..","VERSION")).strip
+
     def self.request_without_verify uri
-        http = Net::HTTP.new($serverName,443)
+        http = Net::HTTP.new(@@serverName,443)
         http.use_ssl = true
         # Might need to do this on windows:
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
@@ -18,7 +21,7 @@ module NuGet
 
 
     def self.download(srcPath, destPath)
-        self.equest_without_verify srcPath do |response|
+        self.request_without_verify srcPath do |response|
             open(destPath, "wb") do |f|
                 response.read_body do |segment|
                     f.write(segment)
@@ -51,6 +54,21 @@ module NuGet
         self.command_line()["versions"].map do |v|
             v["version"]
         end
+    end
+
+    def self.ensure_exe()
+        if not File.exists?(@@nuget_exe) then
+            self.download_version(@@version)
+        end
+    end
+
+    def self.exec(argv)
+        self.ensure_exe()
+        windows = Gem.win_platform? 
+        to_exec = [@@nuget_exe, argv.join(' ')]
+        to_exec.insert(0, "mono --runtime=v4.0") if ! windows
+        result = system(to_exec.join(' '))
+        exit 1 unless result
     end
 end
 
