@@ -5,7 +5,7 @@ require 'json'
 module NuGet
     @@serverName = "dist.nuget.org"
     @@nuget_exe = File.join( File.dirname(__FILE__) , "..", "bin", "/nuget.exe")
-    @@version = File.read(File.join(File.dirname(__FILE__) , "..","VERSION")).strip
+    @@version = File.read(File.join(File.dirname(__FILE__) , "..", "VERSION")).strip
 
     def self.request_without_verify uri
         http = Net::HTTP.new(@@serverName,443)
@@ -47,7 +47,7 @@ module NuGet
         found_version = self.command_line()["versions"].find do |v|
             v["version"] == version
         end
-        self.download(URI(found_version["url"]), "nuget.exe")
+        self.download(URI(found_version["url"]), @@nuget_exe)
     end
 
     def self.list_versions()
@@ -56,19 +56,21 @@ module NuGet
         end
     end
 
-    def self.ensure_exe()
-        if not File.exists?(@@nuget_exe) then
-            self.download_version(@@version)
+    def self.clear_exe()
+        if File.exists?(@@nuget_exe) then
+            File.delete(@@nuget_exe)
         end
     end
 
     def self.exec(argv)
-        self.ensure_exe()
+        if not File.exists?(@@nuget_exe) then
+            puts "Could not find local nuget.exe, downloading"
+            self.download_version(@@version)
+        end
         windows = Gem.win_platform? 
         to_exec = [@@nuget_exe, argv.join(' ')]
         to_exec.insert(0, "mono --runtime=v4.0") if ! windows
-        result = system(to_exec.join(' '))
-        exit 1 unless result
+        return system(to_exec.join(' '))
     end
 end
 
