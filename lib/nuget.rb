@@ -12,7 +12,7 @@ module NuGet
         http.use_ssl = true
         # Might need to do this on windows:
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        request = Net::HTTP::Get.new uri
+        request = Net::HTTP::Get.new(uri)
 
         http.request request do |response|
             yield response
@@ -47,7 +47,7 @@ module NuGet
         found_version = self.command_line()["versions"].find do |v|
             v["version"] == version
         end
-        self.download(URI(found_version["url"]), @@nuget_exe)
+        self.download(found_version["url"], @@nuget_exe)
     end
 
     def self.list_versions()
